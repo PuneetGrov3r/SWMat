@@ -1,6 +1,5 @@
-# SWMat
-### Storytelling With Matplotlib (SWMat)
-A package for making stunning graphs/charts using matplotlib
+# SWMat - Storytelling With Matplotlib (SWMat)
+### A package for making stunning graphs/charts using matplotlib
 
 
 #### Reference:
