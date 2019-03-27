@@ -8,6 +8,7 @@ setup(
   author = 'Puneet Grover',
   author_email = 'grover.puneet1995@gmail.com',
   url = 'https://github.com/PuneetGrov3r/SWMat',
+  download_url = 'https://github.com/PuneetGrov3r/SWMat/archive/v0.1.0-alpha.tar.gz',
   keywords = ['plot', 'visualization', 'data', 'big data', 'exploration', 'data exploration', 'communication', 'python', 'matplotlib', 'machine learning', 'data science'],
   install_requires=[
           'matplotlib',
