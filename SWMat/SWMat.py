@@ -8,15 +8,25 @@ class SWMat(object):
                 Pass in this during every cell execution to initialize current figure.
         """
         if plt is not None:
-            self._plt = plt                                     # matplotlib.pyplot
+            self._plt = plt                                         # matplotlib.pyplot
             #self._plt.cla()
-            self._figsize = figsize
-            self._figsize_max = max(self._figsize)
-            self._fig = self._plt.figure(figsize=self._figsize) # initialize figure size
-            if ax is not None: self._ax = ax
-            else: self._ax = self._plt.gca()                    # get current axis (gca)
+            
+            if ax is not None: 
+                self._ax = ax
+                self._fig = self._ax.get_figure()
+                self._figsize = self._fig.get_size_inches()
+                # https://stackoverflow.com/questions/36368971/how-to-get-number-of-rows-and-columns-from-a-matplotlib-plot/47690765
+                n_row, n_col = self._fig.axes[0].get_subplotspec().get_gridspec().get_geometry()
+                self._figsize_max = max([self._figsize[0]/n_row, self._figsize[1]/n_col])
+            else:
+                self._figsize = figsize
+                self._figsize_max = max(self._figsize)
+                self._fig = self._plt.figure(figsize=self._figsize) # initialize figure size
+                self._ax = self._plt.gca()                          # get current axis (gca)
+            
             self._dpi = self._fig.dpi
             self._rc = self._plt.rc
+        
         else:
             raise ValueError("Not able to initialize. You need to pass in matplotlib.pyplot at 'plt'.")
             
