@@ -17,12 +17,15 @@ setup(
       ],
   classifiers=[
     'Development Status :: 3 - Alpha',
-    'Intended Audience :: Data Communicators, Analysts, Data Scientists',
-    'Topic :: Software Development :: Build Tools',
-    'License :: OSI Approved :: Apache License 2.0',
+    'Intended Audience :: Science/Research',
+    'Topic :: Scientific/Engineering :: Visualization',
+    'License :: OSI Approved :: Apache Software License',
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3.4',
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3 :: Only'
   ],
 )
