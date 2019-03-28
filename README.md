@@ -111,3 +111,8 @@ text = "Lorem <prop fontsize='20', color='#FF7700'>ipsum dolor</prop> sit amet."
 ```
 
 `prop` tag can take all attributes of  `fontdict` available in matplotlib.
+
+## References
+
+  1. Knaflic, Cole. Storytelling With Data: A Data Visualization Guide for Business Professionals, Wiley, © 2015
+  2. Matplotlib Library Docs
