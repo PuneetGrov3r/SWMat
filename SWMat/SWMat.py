@@ -1,4 +1,5 @@
 class SWMat(object):
+    # Done
     def __init__(self, plt, figsize=(10, 7), ax=None):
         """
         This class initializes your plot with some base aesthetics that can be set before plotting, initially.
@@ -56,8 +57,8 @@ class SWMat(object):
         self._ax.xaxis.label.set_color('gray')
         
         ########################################
-        
-        
+
+    # Done  
     def _get_props(self, string):
         """
         """
@@ -86,8 +87,8 @@ class SWMat(object):
 
         props = result
         return string, props
-        
     
+    # Done
     def _split_text(self, text, fontdict):
         """
         """
@@ -123,6 +124,7 @@ class SWMat(object):
         
         return result
     
+    # Done
     def _render_text(self, x, y, s, fontdict, is_raw_text, withdash, **kwargs):
         """
         """
@@ -138,17 +140,20 @@ class SWMat(object):
             bbox = text.get_window_extent(renderer=renderer)
             
         return bbox, text
-        
+    
+    ##################
     def text(self, s, position='out-upper-right', fontdict=None, withdash=False, x=None, y=None, **kwargs):
         """
         ** Call it after making your plot **
         This is a wrapper method to matplotlib's plt.text, adding some extra flexibility.
         
         Parameters:
-                position: str 
+                position: str, tuple/list pair
                     Position of text. Possible positions are 'upper-right', 'upper-left', 'lower-left', 
                     'lower-right', 'upper-center', 'lower-center', 'out-upper-right', 'out-upper-left', 
-                    'out-lower-left', 'out-lower-right', 'out-upper-center', 'out-lower-center'.
+                    'out-lower-left', 'out-lower-right', 'out-upper-center', 'out-lower-center', 'title',
+                    'title+', 'title++' if string is choosen OR (x_precent, y_percent) if tuple or list is 
+                    choosen (eg: [.5, .5] will plot text in mid). 
                 
                 s: str (directly passed to matplotlib's text method)
                     The text.
@@ -167,7 +172,8 @@ class SWMat(object):
         """
         self._type_checking(position=(position, [None, (str, "from", ['upper-right', 'upper-left', 'lower-left', 'lower-right', 'upper-center', 
                                                'lower-center', 'out-upper-right', 'out-upper-left', 'out-lower-left', 
-                                               'out-lower-right', 'out-upper-center', 'out-lower-center'])]),
+                                               'out-lower-right', 'out-upper-center', 'out-lower-center', 'title', 'title+', 'title++']),
+                                                tuple, list]),
                              s=(s, [str]),
                              fontdict=(fontdict, [None, dict]),
                              withdash=(withdash, [bool, int]),
@@ -187,10 +193,16 @@ class SWMat(object):
             'out-lower-right': (1.03, .15),
             'out-upper-center':(.40, 1.3),
             'out-lower-center':(.40, -.2),
+            'title':           (-.1, 1.15),
+            'title+':          (-.1, 1.30),
+            'title++':         (-.1, 1.45)
         }
+
+        if (type(position) == list) or (type(position)==tuple): xy_percent = position
+        else: xy_percent = pos_dict[position][0], pos_dict[position][1]
+
         inv = self._ax.transData.inverted()
-        if x is None and y is None: x, y = inv.transform(self._ax.transAxes.transform((pos_dict[position][0], 
-                                                                                               pos_dict[position][1]))).tolist()
+        if x is None and y is None: x, y = inv.transform(self._ax.transAxes.transform(xy_percent)).tolist()
         text_x = self._ax.transData.transform((x, y))[0]
         text_y_max_h = 0
         
@@ -240,6 +252,7 @@ class SWMat(object):
         
         return (new_x, new_y), result
     
+    # Done
     def _pixels_to_data(self, prev_bbox, length, text_x, max_h, newline=False):
         """
         """
@@ -263,7 +276,7 @@ class SWMat(object):
         
         return inv.transform((res_x, res_y)).tolist()
     
-    
+    # Done
     def hist(self, x, bins=None, highlight=None, normal_color="gray", highlight_color="#FF7200", annotate=True, 
              hide_y=False, **kwargs):
         """
@@ -377,6 +390,7 @@ class SWMat(object):
         
         return hist_plot, annotations
     
+    ###################
     def bar(self, cats, heights, width=0.8, plot_type="sidebyside", cat_labels=None, data_labels=None,
             highlight=None, highlight_type={"cat_type": "static", "data_type": "static"}, 
             highlight_color={"cat_color": "#4B4FF4", "data_color": "#FF7700"}, normal_color="gray", **kwargs):
@@ -824,7 +838,8 @@ class SWMat(object):
                         tks[i].set_color(highlight_color['cat_color'])
         
         return return_
-        
+    
+    ##################
     def axis(self, labels=None, label_pos="view_based", ticks="start-end", color="gray", distance=None,
              hide=None, hide_label=None):
         """
@@ -961,6 +976,7 @@ class SWMat(object):
             self._ax.xaxis.set_label_coords(.8, (-.1-bottom*2 if x_dist is not None else -.1))
             self._ax.yaxis.set_label_coords((-.1-left if y_dist is not None else -.1), .8)
     
+    ##################
     def add_axis(self, position="bottom", pad=20, ticks_pos=None, ticks_len=None, hide_spine=False, 
                  labels=None, labels_pos=None, label_pad=.2):
         """
@@ -1071,8 +1087,9 @@ class SWMat(object):
                 pass
         return _ax_
     
+    # Done
     def line_plot(self, xs, ys, line_labels=None, highlight=None, normal_color="gray", highlight_color="#FF7700",
-                  **kwargs):
+                  label_points_after=None, label_points_before=None, xlabel=None, highlight_label_region_only=False, **kwargs):
         """
         Making a line plot using matplotlib's plot function with a few changes.
         
@@ -1085,6 +1102,14 @@ class SWMat(object):
                 Name for each line. Size equal to number of lines.
             highlight: int or list of ints
                 Indexes of lines to highlight with highlight color.
+            label_points_after: int, float, list or tuple
+                Label points for all lines after this point. List/Tuple as (after_value, [bool list weather to print label above having value for each line]) 
+            label_points_before: int, float, list or tuple
+                Label points for all lines before this point. List/Tuple as (before_value, [bool list weather to print label above having value for each line])
+            xlabel: str
+                xlabel for plot.
+            highlight_label_region_only: bool
+                Weather to highlight line and points lying in region described by label_points_after and label_points_before.
             ...
             **kwargs:
                 Other params for matplotlib.pyplot.plot function.
@@ -1095,43 +1120,362 @@ class SWMat(object):
         self._type_checking(xs=(xs, [list, tuple, np.ndarray, pd.Series, pd.DataFrame]),
                               ys=(ys, [list, tuple, np.ndarray, pd.Series, pd.DataFrame]),
                               line_labels=(line_labels, [list, tuple]),
-                              highlight=(highlight, [int, list, tuple]))
+                              highlight=(highlight, [int, list, tuple]),
+                              label_points_after=(label_points_after, [None, int, float, tuple, list]),
+                              label_points_before=(label_points_before, [None, int, float, tuple, list]),
+                              highlight_label_region_only=(highlight_label_region_only, [bool, int]),
+                              xlabel=(xlabel, [None, str]))
         #if linewidth==None: linewidth = math.log2(self._figsize_max)
         
-        if type(xs) == list or type(xs) == tuple:
+        final_result = {}
+
+        if (type(xs) == list) or (type(xs) == tuple):
             assert len(xs) == len(ys), "You should give same number of (x, y) points."
         else:
             assert xs.shape[1] == ys.shape[1], "You should give x and y points for all lines."
             assert xs.shape[0] == ys.shape[0], "You should give same number of (x, y) points."
         
+        
+        
         return_ = []
+        line_labels_ = []
         for i in range(xs.shape[1]):
+            if label_points_after is not None:
+                t1_ = (label_points_after[0] if (type(label_points_after) in [tuple, list]) else label_points_after)
+                it_after = self._get_pos(xs[:, i], "gt", "start", t1_)
+            else: it_after = -1
+            if label_points_before is not None:
+                t2_ = (label_points_before[0] if (type(label_points_before) in [tuple, list]) else label_points_before)
+                it_before = self._get_pos(xs[:, i], "gte", "start", t2_)
+            else: it_before = -1
+
             if highlight is None:
                 line_plot = self._ax.plot(xs[:, i], ys[:, i], normal_color, **kwargs)
                 return_.append(line_plot[0])
             else:
                 if type(highlight) == int: highlight = [highlight]
                 if i in highlight:
-                    line_plot = self._ax.plot(xs[:, i], ys[:, i], highlight_color, **kwargs)
-                    return_.append(line_plot[0])
+                    if highlight_label_region_only:
+                        if (it_before != -1) and (it_after != -1):
+                            if it_before >= it_after:
+                                res = []
+                                l1 = self._ax.plot(xs[:it_after, i], ys[:it_after, i], normal_color, **kwargs)
+                                res.append(l1[0])
+                                l2 = self._ax.plot(xs[it_after:it_before, i], ys[it_after:it_before, i], highlight_color, **kwargs)
+                                res.append(l2[0])
+                                l3 = self._ax.plot(xs[it_before:, i], ys[it_before:, i], normal_color, **kwargs)
+                                res.append(l3[0])
+                                return_.append(res)
+                            else:
+                                res = []
+                                l1 = self._ax.plot(xs[:it_before, i], ys[:it_before, i], highlight_color, **kwargs)
+                                res.append(l1[0])
+                                l2 = self._ax.plot(xs[it_before:it_after, i], ys[it_before:it_after, i], normal_color, **kwargs)
+                                res.append(l2[0])
+                                l3 = self._ax.plot(xs[it_after:, i], ys[it_after:, i], highlight_color, **kwargs)
+                                res.append(l3[0])
+                                return_.append(res)
+                        elif (it_before == -1) and (it_after != -1):
+                            res = []
+                            l1 = self._ax.plot(xs[:it_after, i], ys[:it_after, i], normal_color, **kwargs)
+                            res.append(l1[0])
+                            l2 = self._ax.plot(xs[it_after:, i], ys[it_after:, i], highlight_color, **kwargs)
+                            res.append(l2[0])
+                            return_.append(res)
+                        elif (it_before != -1) and (it_after == -1):
+                            res = []
+                            l1 = self._ax.plot(xs[:it_before, i], ys[:it_before, i], highlight_color, **kwargs)
+                            res.append(l1[0])
+                            l2 = self._ax.plot(xs[it_before:, i], ys[it_before:, i], normal_color, **kwargs)
+                            res.append(l2[0])
+                            return_.append(res)
+                        elif (it_before == -1) and (it_after == -1):
+                            line_plot = self._ax.plot(xs[:, i], ys[:, i], highlight_color, **kwargs)
+                            return_.append(line_plot[0])
+                    else:
+                        line_plot = self._ax.plot(xs[:, i], ys[:, i], highlight_color, **kwargs)
+                        return_.append(line_plot[0])
                 else:
-                    self._ax.plot(xs[:, i], ys[:, i], normal_color, **kwargs)
+                    line_plot = self._ax.plot(xs[:, i], ys[:, i], normal_color, **kwargs)
                     return_.append(line_plot[0])
             
             self._ax.margins(x=0)
-            x_pos = max(self._ax.get_xticks())*1.01
+            if (label_points_after is not None): # or (label_points_before is not None):
+                x_pos = max(self._ax.get_xticks())*1.05
+            else: x_pos = max(self._ax.get_xticks())*1.01
             y_pos = ys[-1, i]
+            
             if line_labels is not None:
                 if highlight is None:
-                    self._ax.text(x_pos, y_pos, line_labels[i], color=normal_color, fontsize=math.log2(self._figsize_max)*5, va="center")
+                    line_labels_.append(self._ax.text(x_pos, y_pos, line_labels[i], color=normal_color, fontsize=math.log2(self._figsize_max)*5, va="center"))
                 else:
-                    if i in highlight:
-                        self._ax.text(x_pos, y_pos, line_labels[i], color=highlight_color, fontsize=math.log2(self._figsize_max)*5, va="center")
+                    if (i in highlight):
+                        if highlight_label_region_only:
+                            if (it_before < it_after) and (it_after != -1):
+                                line_labels_.append(self._ax.text(x_pos, y_pos, line_labels[i], color=highlight_color, fontsize=math.log2(self._figsize_max)*5, va="center"))
+                            else:
+                                line_labels_.append(self._ax.text(x_pos, y_pos, line_labels[i], color=normal_color, fontsize=math.log2(self._figsize_max)*5, va="center"))
+                        else:
+                            line_labels_.append(self._ax.text(x_pos, y_pos, line_labels[i], color=highlight_color, fontsize=math.log2(self._figsize_max)*5, va="center"))
                     else:
-                        self._ax.text(x_pos, y_pos, line_labels[i], color=normal_color, fontsize=math.log2(self._figsize_max)*5, va="center")
-        
-        return return_
+                        line_labels_.append(self._ax.text(x_pos, y_pos, line_labels[i], color=normal_color, fontsize=math.log2(self._figsize_max)*5, va="center"))
+        final_result["lines"] = return_
+        final_result['line_labels'] = line_labels_
+
+        l_width = return_[0].get_linewidth()
+        labels_after_ = []
+        labels_before_ = []
+        points_after_ = []
+        points_before_ = []
+        if (label_points_after is not None) and ((type(label_points_after) != tuple) and (type(label_points_after) != list)):
+            if (type(xs)==list) or (type(xs)==tuple):
+                it = self._get_pos(xs, "gt", "start", label_points_after)
+                
+                if 0 in highlight: c_ = highlight_color
+                else: c_ = normal_color
+                
+                points_after_.append(self._ax.scatter(xs[it:], ys[it:], color=c_, s=l_width*10))
+                
+                for j in range(len(xs[it:])):
+                    if (j+it >= len(xs)-1) or (j+it <= 0):
+                        labels_after_.append(self._ax.text(xs[j+it], ys[j+it]+l_width*0.05, str(ys[j+it]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+                    else:
+                        if ys[j+it] > ys[j+it-1] and ys[j+it] > ys[j+it+1]:
+                            labels_after_.append(self._ax.text(xs[j+it], ys[j+it]+l_width*0.05, str(ys[j+it]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+                        elif ys[j+it] < ys[j+it-1] and ys[j+it] < ys[j+it+1]:
+                            labels_after_.append(self._ax.text(xs[j+it], ys[j+it]-l_width*0.1, str(ys[j+it]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+            else:
+                if len(xs.shape) == 1:
+                    it = self._get_pos(xs, "gt", "start", label_points_after)
+                    
+                    if 0 in highlight: c_ = highlight_color
+                    else: c_ = normal_color
+                    
+                    points_after_.append(self._ax.scatter(xs[it:], ys[it:], color=c_, s=l_width*10))
+                    
+                    for j in range(len(xs[it:])):
+                        if (j+it >= len(xs)-1) or (j+it <= 0):
+                            labels_after_.append(self._ax.text(xs[j+it], ys[j+it]+l_width*0.05, str(ys[j+it]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+                        else:
+                            if ys[j+it] > ys[j+it-1] and ys[j+it] > ys[j+it+1]:
+                                labels_after_.append(self._ax.text(xs[j+it], ys[j+it]+l_width*0.05, str(ys[j+it]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+                            elif ys[j+it] < ys[j+it-1] and ys[j+it] < ys[j+it+1]:
+                                labels_after_.append(self._ax.text(xs[j+it], ys[j+it]-l_width*0.1, str(ys[j+it]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+                else:
+                    for i in range(xs.shape[1]):
+                        it = self._get_pos(xs[:, i], "gt", "start", label_points_after)
+                        
+                        if i in highlight: c_ = highlight_color
+                        else: c_ = normal_color
+                        
+                        points_after_.append(self._ax.scatter(xs[it:, i], ys[it:, i], color=c_, s=l_width*10))
+                        
+                        for j in range(len(xs[it:, i])):
+                            if (j+it >= len(xs[:, i])-1) or (j+it <= 0):
+                                labels_after_.append(self._ax.text(xs[j+it, i], ys[j+it, i]+l_width*0.05, str(ys[j+it, i]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+                            else:
+                                if ys[j+it, i] > ys[j+it-1, i] and ys[j+it, i] > ys[j+it+1, i]:
+                                    labels_after_.append(self._ax.text(xs[j+it, i], ys[j+it, i]+l_width*0.05, str(ys[j+it, i]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+                                elif ys[j+it, i] < ys[j+it-1, i] and ys[j+it, i] < ys[j+it+1, i]:
+                                    labels_after_.append(self._ax.text(xs[j+it, i], ys[j+it, i]-l_width*0.1, str(ys[j+it, i]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+        elif (label_points_after is not None):
+            after = label_points_after[0]
+            labels_up = label_points_after[1]
+
+            if (type(xs)==list) or (type(xs)==tuple):
+                it = self._get_pos(xs, "gt", "start", after)
+                
+                if 0 in highlight: c_ = highlight_color
+                else: c_ = normal_color
+                
+                points_after_.append(self._ax.scatter(xs[it:], ys[it:], color=c_, s=l_width*10))
+                
+                if (type(labels_up)==int) or (type(labels_up)==bool) or (type(labels_up)==float): labels_up = [labels_up]
+                if labels_up[0]:
+                    for j in range(len(xs[it:])):
+                        labels_after_.append(self._ax.text(xs[j+it], ys[j+it]+l_width*0.05, str(ys[j+it]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+                else:
+                    for j in range(len(xs[it:])):
+                        labels_after_.append(self._ax.text(xs[j+it], ys[j+it]-l_width*0.1, str(ys[j+it]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+            else:
+                if len(xs.shape) == 1:
+                    it = self._get_pos(xs, "gt", "start", after)
+                    
+                    if 0 in highlight: c_ = highlight_color
+                    else: c_ = normal_color
+                    
+                    points_after_.append(self._ax.scatter(xs[it:], ys[it:], color=c_, s=l_width*10))
+                    
+                    if (type(labels_up)==int) or (type(labels_up)==bool) or (type(labels_up)==float): labels_up = [labels_up]
+                    if labels_up[0]:
+                        for j in range(len(xs[it:])):
+                            labels_after_.append(self._ax.text(xs[j+it], ys[j+it]+l_width*0.05, str(ys[j+it]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+                    else:
+                        for j in range(len(xs[it:])):
+                            labels_after_.append(self._ax.text(xs[j+it], ys[j+it]-l_width*0.1, str(ys[j+it]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+                else:
+                    for i in range(xs.shape[1]):
+                        it = self._get_pos(xs[:, i], "gt", "start", after)
+                        
+                        if i in highlight: c_ = highlight_color
+                        else: c_ = normal_color
+                        
+                        points_after_.append(self._ax.scatter(xs[it:, i], ys[it:, i], color=c_, s=l_width*10))
+                        
+                        if labels_up[i]:
+                            for j in range(len(xs[it:, i])):
+                                labels_after_.append(self._ax.text(xs[j+it, i], ys[j+it, i]+l_width*0.05, str(ys[j+it, i]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+                        else:
+                            for j in range(len(xs[it:, i])):
+                                labels_after_.append(self._ax.text(xs[j+it, i], ys[j+it, i]-l_width*0.1, str(ys[j+it, i]), color=c_, fontsize= math.log2(self._figsize_max)*4, ha="center"))
+
+
+        if (label_points_before is not None) and ((type(label_points_before) != tuple) and (type(label_points_before) != list)):
+            if (type(xs)==list) or (type(xs)==tuple):
+                it = self._get_pos(xs, "gte", "start", label_points_before)
+                
+                if 0 in highlight: c_ = highlight_color
+                else: c_ = normal_color
+                
+                points_before_.append(self._ax.scatter(xs[:it], ys[:it], color=c_, s=l_width*1.1))
+                
+                for j in range(len(xs[:it])):
+                    if (j >= len(xs)-1) or (j <= 0):
+                        labels_before_.append(self._ax.text(xs[j], ys[j]+l_width*0.05, str(ys[j]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+                    else:
+                        if ys[j] > ys[j-1] and ys[j] > ys[j+1]:
+                            labels_before_.append(self._ax.text(xs[j], ys[j]+l_width*0.05, str(ys[j]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+                        elif ys[j] < ys[j-1] and ys[j] < ys[j+1]:
+                            labels_before_.append(self._ax.text(xs[j], ys[j]-l_width*0.1, str(ys[j]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+            else:
+                if len(xs.shape) == 1:
+                    it = self._get_pos(xs, "gte", "start", label_points_before)
+                    
+                    if 0 in highlight: c_ = highlight_color
+                    else: c_ = normal_color
+                    
+                    points_before_.append(self._ax.scatter(xs[:it], ys[:it], color=c_, s=l_width*1.1))
+                    
+                    for j in range(len(xs[:it])):
+                        if (j >= len(xs)-1) or (j <= 0):
+                            labels_before_.append(self._ax.text(xs[j], ys[j]+l_width*0.05, str(ys[j]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+                        else:
+                            if ys[j] > ys[j-1] and ys[j] > ys[j+1]:
+                                labels_before_.append(self._ax.text(xs[j], ys[j]+l_width*0.05, str(ys[j]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+                            elif ys[j] < ys[j-1] and ys[j] < ys[j+1]:
+                                labels_before_.append(self._ax.text(xs[j], ys[j]-l_width*0.1, str(ys[j]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+                else:
+                    for i in range(xs.shape[1]):
+                        it = self._get_pos(xs[:, i], "gte", "start", label_points_before)
+                        
+                        if i in highlight: c_ = highlight_color
+                        else: c_ = normal_color
+                        
+                        points_before_.append(self._ax.scatter(xs[:it, i], ys[:it, i], color=c_, s=l_width*1.1))
+                        
+                        for j in range(len(xs[:it, i])):
+                            if (j+it >= len(xs[:, i])-1) or (j+it <= 0):
+                                labels_before_.append(self._ax.text(xs[j, i], ys[j, i]+l_width*0.05, str(ys[j, i]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+                            else:
+                                if ys[j+it, i] > ys[j+it-1, i] and ys[j+it, i] > ys[j+it+1, i]:
+                                    labels_before_.append(self._ax.text(xs[j, i], ys[j, i]+l_width*0.05, str(ys[j, i]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+                                elif ys[j+it, i] < ys[j+it-1, i] and ys[j+it, i] < ys[j+it+1, i]:
+                                    labels_before_.append(self._ax.text(xs[j, i], ys[j, i]-l_width*0.1, str(ys[j, i]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+        elif (label_points_before is not None):
+            before = label_points_before[0]
+            labels_up = label_points_before[1]
+
+            if (type(xs)==list) or (type(xs)==tuple):
+                it = self._get_pos(xs, "gte", "start", before)
+                
+                if 0 in highlight: c_ = highlight_color
+                else: c_ = normal_color
+                
+                points_before_.append(self._ax.scatter(xs[:it], ys[:it], color=c_, s=l_width*1.1))
+                
+                if (type(labels_up)==int) or (type(labels_up)==bool) or (type(labels_up)==float): labels_up = [labels_up]
+                if labels_up[0]:
+                    for j in range(len(xs[:it])):
+                        labels_before_.append(self._ax.text(xs[j], ys[j]+l_width*0.05, str(ys[j]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+                else:
+                    for j in range(len(xs[:it])):
+                        labels_before_.append(self._ax.text(xs[j], ys[j]-l_width*0.1, str(ys[j]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+            else:
+                if len(xs.shape) == 1:
+                    it = self._get_pos(xs, "gte", "start", before)
+                   
+                    if 0 in highlight: c_ = highlight_color
+                    else: c_ = normal_color
+                    
+                    points_before_.append(self._ax.scatter(xs[:it], ys[:it], color=c_, s=l_width*1.1))
+                    
+                    if (type(labels_up)==int) or (type(labels_up)==bool) or (type(labels_up)==float): labels_up = [labels_up]
+                    if labels_up[0]:
+                        for j in range(len(xs[:it])):
+                            labels_before_.append(self._ax.text(xs[j], ys[j]+l_width*0.05, str(ys[j]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+                    else:
+                        for j in range(len(xs[:it])):
+                            labels_before_.append(self._ax.text(xs[j], ys[j]-l_width*0.1, str(ys[j]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+                else:
+                    for i in range(xs.shape[1]):
+                        it = self._get_pos(xs[:, i], "gte", "start", before)
+                        
+                        if i in highlight: c_ = highlight_color
+                        else: c_ = normal_color
+                        
+                        points_before_.append(self._ax.scatter(xs[:it, i], ys[:it, i], color=c_, s=l_width*1.1))
+                        
+                        if labels_up[i]:
+                            for j in range(len(xs[:it, i])):
+                                labels_before_.append(self._ax.text(xs[j, i], ys[j, i]+l_width*0.05, str(ys[j, i]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+                        else:
+                            for j in range(len(xs[:it, i])):
+                                labels_before_.append(self._ax.text(xs[j, i], ys[j, i]-l_width*0.1, str(ys[j, i]), color=c_, fontsize=math.log2(self._figsize_max)*3, ha="center"))
+
+        self._ax.set_xlabel(xlabel, fontsize=math.log2(self._figsize_max)*6)
+        #self._ax.xaxis.set_label_coords(.06, -.1)
+
+        final_result['labels_after'] = labels_after_
+        final_result['labels_before'] = labels_before_
+        final_result['points_after'] = points_after_
+        final_result['points_before'] = points_before_
+
+        return final_result
     
+    # Done
+    def _get_pos(self, arr, type_, from_, num):
+        """
+        """
+        if type_ == "gte":
+            if from_ == "start":
+                for i in range(len(arr)):
+                    if arr[i] >= num: return i
+            elif from_ == "end":
+                for i in range(len(arr)-1, -1, -1):
+                    if arr[i] >= num: return i
+        elif type_ == "lte":
+            if from_ == "start":
+                for i in range(len(arr)):
+                    if arr[i] <= num: return i
+            elif from_ == "end":
+                for i in range(len(arr)-1, -1, -1):
+                    if arr[i] <= num: return i
+        elif type_ == "lt":
+            if from_ == "start":
+                for i in range(len(arr)):
+                    if arr[i] < num: return i
+            elif from_ == "end":
+                for i in range(len(arr)-1, -1, -1):
+                    if arr[i] < num: return i
+        elif type_ == "gt":
+            if from_ == "start":
+                for i in range(len(arr)):
+                    if arr[i] > num: return i
+            elif from_ == "end":
+                for i in range(len(arr)-1, -1, -1):
+                    if arr[i] > num: return i
+    
+    ##################
     def violinplot(self, dataset, show="top", highlight=None, highlight_color="#FF7700", normal_color="gray", 
                    positions=None, showextrema=False, **kwargs):
         """
@@ -1245,6 +1589,7 @@ class SWMat(object):
                         self._ax.fill_betweenx(y=pts[0],x1=pts[1],x2=pts[2],color=highlight_color, alpha=0.85, 
                                               edgecolor="white", zorder=999.0)
     
+    # Done
     def _get_pts(self, ps, curve_pts, show, min_p, max_p, pos):
         """
         """
@@ -1264,6 +1609,7 @@ class SWMat(object):
             i1, i2 = self._find_pts(curve_pts[:,0], "gt", ps[0], "lt", ps[1]), self._find_pts(curve_pts[:,0], "lt", ps[1], "gt", ps[0])
             return curve_pts[i1:i2+1, 0], [pos]*len(curve_pts[i1:i2+1, 1]), curve_pts[i1:i2+1, 1], "y"
 
+    # Done
     def _find_pts(self, arr, type_1, num1, type_2, num2):
         """
         """
@@ -1277,7 +1623,19 @@ class SWMat(object):
         elif type_1 == "lt" and type_2 == "gt":
             for i in range(iter_, -1, -1):
                 if (arr[i] <= num1) and (arr[i] >= num2): return i
-        
+    
+    ##################
+    def slope_graph(self):
+        """
+        Function for making a slope graph.
+
+        Parameters:
+
+        """
+        return_ = []
+        return return_
+
+    # Done
     def _type_checking(self, **kwargs):
         """
         """
@@ -1286,6 +1644,7 @@ class SWMat(object):
             if result==False:
                 raise TypeError('Type Mismatch for {0} parameter. {1}'.format(key, ans))
     
+    # Done
     def _check(self, t):
         """
         """
