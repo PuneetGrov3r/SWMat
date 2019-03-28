@@ -5,6 +5,19 @@
 
 ## Example plots made with this library:
 
+# Index
+ 1. [Installation](#1-installation)
+ 2. [Import](#2-import)
+ 3. [Usage](#3-usage)
+    * 3.1 [Initialize Class](#31-initialize-class)
+    * 3.2 [Main features of Package](#32-main-features-of-package)
+    * 3.3 [Other Functions](#33-other-functions)
+        * [Line Plot](#331-line-plot)
+        * [Hist Plot](#332-hist-plot)
+        * [Bar Plot](#333-bar-plot)
+        * [Violin Plot](#334-violin-plot)
+        * [Text](#335-text)
+  4. [References](#4-references)
 
 ## 1) Installation
 Using Pip:
@@ -45,17 +58,18 @@ swm = SWMat(plt) # And... base beautifications will be added.
 plt.scatter(x, y)
 ```
 ![Base](images/base.png)
-  - And you can easily plot text on your plot using `SWMat.text`,
+  - You can easily plot text on your plot using `SWMat.text`,
 ```
 swm = SWMat(plt) # This function will initialize your plot
 plt.scatter(x, y)
 swm.text(some_text);  # That's all!! Don't worry there's much more you can do with it.
 ```
 ![text1](images/text1.png)
+  - And there is a `highlight` parameter available with every function in `SWMat`, to help you highlight some part of plot for that particular plot type.
 
 
 ### 3.3 Other Functions:
-#### 3.3.1 Line PLot:
+#### 3.3.1 Line Plot:
 
 Main parameters to look for here are: `line_labels` (Label for each line plot) and `highlight` (int or list of lines to highlight).
 
@@ -112,7 +126,7 @@ text = "Lorem <prop fontsize='20', color='#FF7700'>ipsum dolor</prop> sit amet."
 
 `prop` tag can take all attributes of  `fontdict` available in matplotlib.
 
-## References
+## 4) References
 
   1. Knaflic, Cole. Storytelling With Data: A Data Visualization Guide for Business Professionals, Wiley, © 2015
   2. Matplotlib Library Docs
