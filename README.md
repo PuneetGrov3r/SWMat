@@ -15,7 +15,7 @@
         * [Line Plot](#331-line-plot)
         * [Hist Plot](#332-hist-plot)
         * [Bar Plot](#333-bar-plot)
-        * [Violin Plot](#334-violin-plot)
+        * [Violin Plot (Dist Plot)](#334-violin-plot)
         * [Text](#335-text)
   4. [References](#4-references)
 
@@ -62,7 +62,7 @@ plt.scatter(x, y)
 ```
 swm = SWMat(plt) # This function will initialize your plot
 plt.scatter(x, y)
-swm.text(some_text);  # That's all!! Don't worry there's much more you can do with it.
+swm.text(some_text, fontsize=30);  # That's all!! Don't worry there's much more you can do with it.
 ```
 ![text1](images/text1.png)
   - And there is a `highlight` parameter available with every function in `SWMat`, to help you highlight some part of plot for that particular plot type.
