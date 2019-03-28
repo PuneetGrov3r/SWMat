@@ -98,19 +98,28 @@ class SWMat(object):
         end = re.finditer(r"(?<![\\])>", text)
         end = [m.start(0) for m in end]
         
-        assert len(start) == len(end), "You should escape <, > if not used to give props, like \< and \>."
+        assert len(start) == len(end), "You should escape <, > if not used to give props, like \\< and \\>."
         
         result = []
-        if start[0] != 0:
-            result.append((text[:start[0]], fontdict))
+        if len(start) > 0:
+            if start[0] != 0:
+                result.append((text[:start[0]].replace("\\>", ">").replace("\\<", "<")\
+                                              .replace("\>", ">").replace("\<", "<").strip(), fontdict))
         for i in range(0, len(start), 2):
             s, e = start[i], end[i+1]
-            result.append(self._get_props(text[start[i]:end[i+1]-6]))
+            result.append(self._get_props(text[start[i]:end[i+1]-6].replace("\\>", ">").replace("\\<", "<")\
+                                          .replace("\>", ">").replace("\<", "<").strip()))
             if i+2 < len(start):
                 if end[i+1] != start[i+2]-1:
-                    result.append((text[end[i+1]+1:start[i+2]].replace("\\>", ">").replace("\\<", "<"), fontdict))
-        if end[-1]+1 != len(start):
-            result.append((text[end[-1]+1:], fontdict))
+                    result.append((text[end[i+1]+1:start[i+2]].replace("\\>", ">").replace("\\<", "<")\
+                                   .replace("\>", ">").replace("\<", "<").strip(), fontdict))
+        if len(end) > 0:
+            if end[-1]+1 != len(start):
+                result.append((text[end[-1]+1:].replace("\\>", ">").replace("\\<", "<")\
+                               .replace("\>", ">").replace("\<", "<").strip(), fontdict))
+        
+        if (len(start)==0) and (len(end)==0):
+            result.append((text, fontdict))
         
         return result
     
@@ -403,9 +412,9 @@ class SWMat(object):
         self._type_checking(cats=(cats, [list, tuple, np.ndarray, pd.Series, pd.DataFrame]),
                               heights=(heights, [list, tuple, np.ndarray, pd.Series, pd.DataFrame]),
                               plot_type=(plot_type, [(str, "from", ["stackedV", "stackedH", "stacked100%", "sidebyside"])]),
-                              cat_labels=(cat_labels, [list, tuple]),
-                              data_labels=(data_labels, [list, tuple]),
-                              highlight=(highlight, [(dict, "with key(s)", ["cat", "data"])]),
+                              cat_labels=(cat_labels, [None, list, tuple]),
+                              data_labels=(data_labels, [None, list, tuple]),
+                              highlight=(highlight, [None, (dict, "with key(s)", ["cat", "data"])]),
                               highlight_type=(highlight_type, [(dict, "with key(s)", ["cat_type", "data_type"])]),
                               normal_color=(normal_color, [str, list, tuple]),
                               highlight_color=(highlight_color, [(dict, "with key(s)", ["cat_color", "data_color"])]))
@@ -1290,8 +1299,10 @@ class SWMat(object):
                 if type_[0] == str:
                     if to_chk not in type_[2]: count+=1
                 elif type_[0] == dict:
-                    for k_ in to_chk.keys():
-                        if k_ not in type_[2]: count+=1
+                    if None in chk_from and to_chk is None: continue
+                    else:
+                        for k_ in to_chk.keys():
+                            if k_ not in type_[2]: count+=1
             else:
                 if type(to_chk) != type_: count+=1
         
