@@ -88,7 +88,11 @@ swm = SWMat(plt)
 swm.hist(data, highlight=3, bins=bins);
 ```
 ![hist](images/hist.png)
-
+```
+swm = SWMat(plt)
+swm.hist(data, highlight=3, bins=bins, hide_y=True);
+```
+![hist2](images/hist2.png)
 #### 3.3.3 Bar Plot:
 
 Main parameters to look for here are: `plot_type` (horizontal, vertical etc), `cat_labels` (labels for categories in each data vector), `data_labels` (labels for each data vector) and `highlight` (dictionary taking int or list of ints for highlighting particular data bars or given category bars).
