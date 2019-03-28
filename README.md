@@ -1,6 +1,6 @@
 ## SWMat - Storytelling With Matplotlib
-![SWMat](images/swm.png)
 ### A package for making stunning graphs/charts using matplotlib in just a few lines of code!
+![SWMat](images/swm.png)
 ---
 
 ## 1) Installation
