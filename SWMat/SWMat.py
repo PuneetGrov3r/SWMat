@@ -8,6 +8,8 @@ class SWMat(object):
             plt: matplotlib.pyplot
                 Pass in this during every cell execution to initialize current figure.
         """
+        import matplotlib as mpl
+        
         if plt is not None:
             self._plt = plt                                         # matplotlib.pyplot
             #self._plt.cla()
@@ -18,7 +20,7 @@ class SWMat(object):
                 self._figsize = self._fig.get_size_inches()
                 # https://stackoverflow.com/questions/36368971/how-to-get-number-of-rows-and-columns-from-a-matplotlib-plot/47690765
                 n_row, n_col = self._fig.axes[0].get_subplotspec().get_gridspec().get_geometry()
-                self._figsize_max = max([self._figsize[0]/n_row, self._figsize[1]/n_col])
+                self._figsize_max = max([self._figsize[0]/n_col, self._figsize[1]/n_row])
             else:
                 self._figsize = figsize
                 self._figsize_max = max(self._figsize)
@@ -26,7 +28,12 @@ class SWMat(object):
                 self._ax = self._plt.gca()                          # get current axis (gca)
             
             self._dpi = self._fig.dpi
-            self._rc = self._plt.rc
+            self._rc = mpl.rc_params()
+            
+            self._fconst = 2.97 # Font size constant.
+            self._def_fs = float(self._rc.get('font.size'))
+            self._btw_font_space = 1.1
+            self._df_box_size  = (self._def_fs/(self._dpi*3.8))*self._btw_font_space  # Default font box size
         
         else:
             raise ValueError("Not able to initialize. You need to pass in matplotlib.pyplot at 'plt'.")
@@ -204,56 +211,74 @@ class SWMat(object):
         inv = self._ax.transData.inverted()
         if x is None and y is None: x, y = inv.transform(self._ax.transAxes.transform(xy_percent)).tolist()
         text_x = self._ax.transData.transform((x, y))[0]
-        text_y_max_h = 0
+        
         
         strings_n_fonts = self._split_text(s, fontdict)
         
         newline = 0
-        new_x, new_y = 0, 0
+        max_fs = 0
+        new_x, new_y = x, y
         i = 0
         result = []
         for string, font in strings_n_fonts:
             if len(string) < 1 or string == " ": continue
             if "\n" in string: newline = 1 
             if newline:
+                if font is not None:
+                    if "fontsize" in font.keys(): curr_fs = float(font["fontsize"])
+                elif kwargs is not None:
+                    if "fontsize" in kwargs.keys(): curr_fs = float(kwargs["fontsize"])
+                else: curr_fs = self._def_fs
+                
                 if string[0] == "\n":
                     string = " " + string
                 if string[-1] == "\n":
                     string = string + " "
                 strs_ = string.split("\n")
+                
                 j = 0
+                l_strs_ = len(strs_)
+                nl = newline
                 for s in strs_:
-                    if j == 0:
+                    if j == l_strs_-1: nl=False
+                    if j == 0:                        
                         bbox, t_ = self._render_text(new_x, new_y, s, font, font==fontdict, withdash, **kwargs)
-                        if bbox.height > text_y_max_h: text_y_max_h = bbox.height
-                        new_x, new_y = self._pixels_to_data(bbox, len(s), text_x, text_y_max_h, newline=True)
-                        text_y_max_h = bbox.height
+                        if curr_fs > max_fs: max_fs = curr_fs
+                        new_x, new_y = self._pixels_to_data(bbox, len(s), text_x, max_fs, curr_fs, newline=nl)
+                        max_fs = curr_fs
                     else:
                         bbox, t_ = self._render_text(new_x, new_y, s, font, font==fontdict, withdash, **kwargs)
-                        text_y_max_h = bbox.height
-                        new_x, new_y = self._pixels_to_data(bbox, len(s), text_x, text_y_max_h, newline=True)
+                        max_fs = curr_fs
+                        new_x, new_y = self._pixels_to_data(bbox, len(s), text_x, max_fs, curr_fs, newline=nl)
                     j += 1
                     if s != " ":
                         result.append(t_)
             else:
+                if font is not None:
+                    if "fontsize" in font.keys(): curr_fs = float(font["fontsize"])
+                elif kwargs is not None:
+                    if "fontsize" in kwargs.keys(): curr_fs = float(kwargs["fontsize"])
+                else: curr_fs = self._def_fs
+                
                 if i:
                     bbox, t_ = self._render_text(new_x, new_y, string, font, font==fontdict, withdash, **kwargs)
                     result.append(t_)
-                    if bbox.height > text_y_max_h: text_y_max_h = bbox.height
-                    new_x, new_y = self._pixels_to_data(bbox, len(string), text_x, text_y_max_h)
+                    if curr_fs > max_fs: max_fs = curr_fs
+                    new_x, new_y = self._pixels_to_data(bbox, len(string), text_x, max_fs, curr_fs)
                 else:
                     bbox, t_ = self._render_text(x, y, string, font, font==fontdict, withdash, **kwargs)
                     result.append(t_)
-                    text_y_max_h = bbox.height
-                    new_x, new_y = self._pixels_to_data(bbox, len(string), text_x, text_y_max_h)
+                    max_fs = curr_fs
+                    new_x, new_y = self._pixels_to_data(bbox, len(string), text_x, max_fs,  curr_fs)
             
             i += 1
             newline = 0
         
-        return (new_x, new_y), result
+        
+        return self._ax.transAxes.inverted().transform(self._ax.transData.transform((new_x, new_y)).tolist()).tolist(), result
     
     # Done
-    def _pixels_to_data(self, prev_bbox, length, text_x, max_h, newline=False):
+    def _pixels_to_data(self, prev_bbox, length, text_x, max_fs, curr_fs, newline=False):
         """
         """
         import math
@@ -265,10 +290,10 @@ class SWMat(object):
         res_x, res_y = None, None
         if newline:
             res_x = text_x
-            if max_h > height:
-                res_y = y0 - math.exp(math.sqrt(max_h))/8.0
+            if max_fs > height:
+                res_y = y0 - (max_fs/(self._dpi*3.8))*self._btw_font_space
             else:
-                res_y = y0 + .5*height
+                res_y = y0 - (curr_fs/(self._dpi*3.8))*self._btw_font_space
         else:
             char_len = width/length
             res_x = x1 + char_len

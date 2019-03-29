@@ -1,6 +1,6 @@
 # SWMat - Storytelling With Matplotlib
 
-## A package for making stunning graphs/charts using matplotlib in just a few lines of code
+## (Make stunning graphs/charts using matplotlib in just a few lines of code)
 
 ![SWMat](images/swm.png)
 
@@ -45,14 +45,14 @@ from SWMat.SWMat import SWMat  # Will change it soon...
 
 You can initialize `SWMat` class in two ways:
 
-    - Either you can only pass `matplotlib.pyplot` directly,
+    * Either you can only pass `matplotlib.pyplot` directly,
 
 ```python
 import matplotlib.pyplot as plt
 swm = SWMat(plt) # Will take current Axes
 ```
 
-    - Or you can pass `Axes` with `matplotlib.pyplot` to beautify given `Axes`.
+    * Or you can pass `Axes` with `matplotlib.pyplot` to beautify given `Axes`.
 
 ```python
 import matplotlib.pyplot as plt
@@ -64,7 +64,7 @@ swm = SWMat(plt, ax=axs[0][1])
 
 There are 'two' main differentiating features of this package:
 
-    - Base beautifications are done without much hassle,
+    * Base beautifications are done without much hassle,
 
 ```python
 swm = SWMat(plt) # And... The Base beautifications will be added.
@@ -73,7 +73,7 @@ plt.scatter(x, y)
 
 ![Base](images/base.png)
 
-    - You can easily plot text on your plot using `SWMat.text`,
+    * You can easily plot text on your plot using `SWMat.text`,
 
 ```python
 swm = SWMat(plt) # This function will initialize your plot
@@ -83,7 +83,7 @@ swm.text(some_text, fontsize=30);  # That's all!! Don't worry there's much more 
 
 ![text1](images/text1.png)
 
-    - And there is a `highlight` parameter available with every function in `SWMat`, to help you highlight some part of plot for that particular plot type.
+    * And there is a `highlight` parameter available with every function in `SWMat`, to help you highlight some part of plot for that particular plot type.
 
 ### 3.3 Other Functions
 
