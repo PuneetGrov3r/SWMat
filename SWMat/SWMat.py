@@ -11,7 +11,7 @@ class SWMat(object):
         import matplotlib as mpl
         
         if plt is not None:
-            self._plt = plt                                         # matplotlib.pyplot
+            self._plt = plt  # matplotlib.pyplot
             #self._plt.cla()
             
             if ax is not None: 
@@ -30,7 +30,7 @@ class SWMat(object):
             self._dpi = self._fig.dpi
             self._rc = mpl.rc_params()
             
-            self._fconst = 3.8 # Font size constant.
+            self._fconst = 5.285 # Font size constant.
             self._def_fs = float(self._rc.get('font.size'))
             self._btw_font_space = 1.1
             self._df_box_size  = (self._def_fs/(self._dpi*self._fconst))*self._btw_font_space  # Default font box size
@@ -108,7 +108,10 @@ class SWMat(object):
             if "fontsize" in kwargs.keys(): default_fs = kwargs["fontsize"]
         else: default_fs = self._def_fs
         
-        new_lines = re.finditer(r"\n", text)
+        if fontdict is None:
+            fontdict = {"fontsize":default_fs}
+        
+        new_lines = re.finditer("\n", text)
         new_lines = [m.start(0) for m in new_lines]
         if len(new_lines) > 0: nl_pos = new_lines[0]
         
@@ -132,8 +135,8 @@ class SWMat(object):
             else:
                 final_texts.append(string_)
             
-            new_lines = re.finditer(r"\n", curr_text)
-            new_lines = [m.start(0) for m in new_lines][0]
+            new_lines = re.finditer("\n", curr_text)
+            new_lines = [m.start(0) for m in new_lines]
             if len(new_lines) > 0: nl_pos = new_lines[0]
             if len(new_lines) > 0: wh_ = True
             else: wh_ = False
@@ -142,42 +145,49 @@ class SWMat(object):
         
         return_ = []
         for text in final_texts:
+            min_fs = 999
             max_fs = default_fs
             start = re.finditer(r"(?<![\\])<", text)
             start = [m.start(0) for m in start]
             end = re.finditer(r"(?<![\\])>", text)
             end = [m.start(0) for m in end]
             assert len(start) == len(end), "You should escape <, > if not used to give props, like \< and \>."
-
+            assert (len(start)%2) == 0, "'prop' tag count mismatch. Maybe you added some extra or left out some opening or closing tag. Also, you should escape <, > if not used to give props, like \< and \>."
+            assert (len(end)%2) == 0, "'prop' tag count mismatch. Maybe you added some extra or left out some opening or closing tag. Also, you should escape <, > if not used to give props, like \< and \>."
+            
             result = []
             if len(start) > 0:
                 if start[0] != 0:
                     result.append((text[:start[0]].replace("\\>", ">").replace("\\<", "<")\
-                                                .replace(r"\>", ">").replace(r"\<", "<").strip(), fontdict))
+                                                .replace("\>", ">").replace("\<", "<").strip(), fontdict))
             for i in range(0, len(start), 2):
                 str_, props_ = self._get_props(text[start[i]:end[i+1]-6].replace("\\>", ">").replace("\\<", "<")\
-                                            .replace(r"\>", ">").replace(r"\<", "<").strip())
+                                            .replace("\>", ">").replace("\<", "<").strip())
+                if (str_ == ""): continue
+                if "fontsize" not in props_.keys():
+                    props_["fontsize"] = default_fs
                 result.append((str_, props_))
                 if i+2 < len(start):
                     if end[i+1] != start[i+2]-1:
                         result.append((text[end[i+1]+1:start[i+2]].replace("\\>", ">").replace("\\<", "<")\
-                                    .replace(r"\>", ">").replace(r"\<", "<").strip(), fontdict))
+                                    .replace("\>", ">").replace("\<", "<").strip(), fontdict))
             if len(end) > 0:
-                if end[-1]+1 != len(start):
+                if end[-1]+1 != len(text):
                     result.append((text[end[-1]+1:].replace("\\>", ">").replace("\\<", "<")\
-                                .replace(r"\>", ">").replace(r"\<", "<").strip(), fontdict))
+                                .replace("\>", ">").replace("\<", "<").strip(), fontdict))
             
             if (len(start)==0) and (len(end)==0):
                 result.append((text, fontdict))
             
             for r_ in result:
                 if r_[1] is not None:
-                    if "fontsize" in r_[1]: 
-                        if r_[1]["fontsize"] > max_fs : max_fs = r_[1]["fontsize"]
+                    if "fontsize" in r_[1].keys(): 
+                        if float(r_[1]["fontsize"]) > float(max_fs) : max_fs = float(r_[1]["fontsize"])
+                        if float(r_[1]["fontsize"]) < float(min_fs) : min_fs = float(r_[1]["fontsize"])
             
-            return_.append((result, max_fs))
-            
-            return return_
+            if min_fs == 999: min_fs = default_fs
+            return_.append((result, max_fs, min_fs))
+        return return_
     
     # Done
     def _render_text(self, x, y, s, fontdict, is_raw_text, withdash, **kwargs):
@@ -196,7 +206,7 @@ class SWMat(object):
             
         return bbox, text
     
-    ##################
+    # Done
     def text(self, s, position='out-upper-right', inline_pos="center", fontdict=None, withdash=False, x=None, y=None, **kwargs):
         """
         ** Call it after making your plot **
@@ -263,42 +273,48 @@ class SWMat(object):
 
         inv = self._ax.transData.inverted()
         if x is None and y is None: x, y = inv.transform(self._ax.transAxes.transform(xy_percent)).tolist()
-        text_x = self._ax.transData.transform((x, y))[0]
-        
+        # text_x = self._ax.transData.transform((x, y))[0]
         
         strgps_and_maxfs = self._split_text(s, fontdict, **kwargs)
-        
+
         new_x, new_y = x, y
-        
         result = []
-        for string_gp, max_fs in strgps_and_maxfs:
+        new_line_y = y
+        for string_gp, max_fs, min_fs in strgps_and_maxfs:
+            max_fs = float(max_fs)
+            min_fs = float(min_fs)
             i = 0
             nl = False
-            group_x = new_x
+            group_x = x
+            group_y = new_line_y
             for string, font in string_gp:
                 if font is not None:
-                    if "fontsize" in font.keys(): curr_fs = font["fontsize"]
+                    if "fontsize" in font.keys(): curr_fs = float(font["fontsize"])
                 elif kwargs is not None:
-                    if "fontsize" in kwargs.keys(): curr_fs = font["fontsize"]
-                else: curr_fs = self._def_fs
+                    if "fontsize" in kwargs.keys(): curr_fs = float(kwargs["fontsize"])
+                else: curr_fs = float(self._def_fs)
                 
                 if i == len(string_gp)-1: nl=True
                 
                 if len(string) < 1 or string == " ": continue
                 
-                if inline_pos == "center":
-                    max_box_len_ =  (max_fs/(self._dpi*self._fconst))*self._btw_font_space
-                    curr_box_len_ =  (curr_fs/(self._dpi*self._fconst))*self._btw_font_space
-                    this_x, this_y = new_x, new_y-(max_box_len_/2) + (curr_box_len_/2)
-                elif inline_pos == "bottom":
-                    max_box_len_ =  (max_fs/(self._dpi*self._fconst))*self._btw_font_space
-                    curr_box_len_ =  (curr_fs/(self._dpi*self._fconst))*self._btw_font_space
-                    this_x, this_y = new_x, new_y-(max_box_len_) + (curr_box_len_/2)
+                if inline_pos == "bottom":
+                    max_box_len_ =  (max_fs/(self._dpi*self._fconst))
+                    curr_box_len_ =  (curr_fs/(self._dpi*self._fconst))
+                    this_x, this_y = new_x, new_y - (max_box_len_) + (curr_box_len_)
+                elif inline_pos == "center":
+                    max_box_len_ =  (max_fs/(self._dpi*self._fconst))
+                    curr_box_len_ =  (curr_fs/(self._dpi*self._fconst))
+                    this_x, this_y = new_x, new_y - (max_box_len_/2) + (curr_box_len_/2)
                 else: this_x, this_y = new_x, new_y
                 
                 bbox, t_ = self._render_text(this_x, this_y, string, font, font==fontdict, withdash, **kwargs)
                 result.append(t_)
-                new_x, new_y = self._pixels_to_data(bbox, len(string), group_x, max_fs, curr_fs, nl)
+                if nl:
+                    new_x, new_y = self._pixels_to_data(bbox, len(string), group_x, new_line_y, max_fs, min_fs, newline=nl)
+                    new_line_y = new_y
+                else:
+                    new_x, new_y = self._pixels_to_data(bbox, len(string), group_x, group_y, max_fs, min_fs, newline=nl)
                 
                 i += 1
         
@@ -306,25 +322,25 @@ class SWMat(object):
         return self._ax.transAxes.inverted().transform(self._ax.transData.transform((new_x, new_y)).tolist()).tolist(), result
     
     # Done
-    def _pixels_to_data(self, prev_bbox, length, group_x, max_fs, curr_fs, newline=False):
+    def _pixels_to_data(self, prev_bbox, length, group_x, group_y, max_fs, min_fs, newline=False):
         """
         """
-        import math
-        inv = self._ax.transData.inverted()
+        #import math
+        x1 = prev_bbox.x1
+        x1 = self._ax.transData.inverted().transform((x1, x1)).tolist()[0]
         
-        y0, x1, y1 = prev_bbox.y0, prev_bbox.x1, prev_bbox.y1
-        width = prev_bbox.width
+        #width = prev_bbox.width
         
         res_x, res_y = None, None
         if newline:
             res_x = group_x
-            res_y = y0 - (curr_fs/(self._dpi*self._fconst))*self._btw_font_space
+            res_y = group_y - (max_fs/(self._dpi*self._fconst))*self._btw_font_space*550
         else:
-            char_len = width/length
-            res_x = x1 + char_len
-            res_y = y1
+            #char_len = width/length
+            res_x = x1 + (max_fs/(self._dpi*self._fconst*min_fs))*2
+            res_y = group_y
         
-        return inv.transform((res_x, res_y)).tolist()
+        return res_x, res_y
     
     # Done
     def hist(self, x, bins=None, highlight=None, normal_color="gray", highlight_color="#FF7200", annotate=True, 
