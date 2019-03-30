@@ -78,7 +78,7 @@ plt.scatter(x, y)
 ```python
 swm = SWMat(plt) # This function will initialize your plot
 plt.scatter(x, y)
-swm.text(some_text, fontsize=30);  # That's all!! Don't worry there's much more you can do with it.
+swm.text(some_text);  # That's all!! Don't worry there's much more you can do with it.
 ```
 
 ![text1](images/text1.png)
