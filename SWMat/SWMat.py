@@ -27,11 +27,14 @@ class SWMat(object):
                 self._fig = self._plt.figure(figsize=self._figsize) # initialize figure size
                 self._ax = self._plt.gca()                          # get current axis (gca)
             
+            mpl.rcParams["font.size"] = 16
+            mpl.rcParams["text.color"] = "gray"
+
             self._dpi = self._fig.dpi
             self._rc = mpl.rc_params()
             
             self._fconst = 5.285 # Font size constant.
-            self._def_fs = float(self._rc.get('font.size'))
+            self._def_fs = 16
             self._btw_font_space = 1.1
             self._df_box_size  = (self._def_fs/(self._dpi*self._fconst))*self._btw_font_space  # Default font box size
         
@@ -101,12 +104,12 @@ class SWMat(object):
         """
         if text[-1] == "\n": text = text + " "
         import re
-
+        
+        default_fs = self._def_fs
         if fontdict is not None:
             if "fontsize" in fontdict.keys(): default_fs = fontdict["fontsize"]
         elif kwargs is not None:
             if "fontsize" in kwargs.keys(): default_fs = kwargs["fontsize"]
-        else: default_fs = self._def_fs
         
         if fontdict is None:
             fontdict = {"fontsize":default_fs}
@@ -298,14 +301,11 @@ class SWMat(object):
                 
                 if len(string) < 1 or string == " ": continue
                 
-                if inline_pos == "bottom":
-                    max_box_len_ =  (max_fs/(self._dpi*self._fconst))
-                    curr_box_len_ =  (curr_fs/(self._dpi*self._fconst))
-                    this_x, this_y = new_x, new_y - (max_box_len_) + (curr_box_len_)
-                elif inline_pos == "center":
-                    max_box_len_ =  (max_fs/(self._dpi*self._fconst))
-                    curr_box_len_ =  (curr_fs/(self._dpi*self._fconst))
-                    this_x, this_y = new_x, new_y - (max_box_len_/2) + (curr_box_len_/2)
+                max_box_len_ =  (max_fs/(self._dpi*self._fconst))
+                curr_box_len_ =  (curr_fs/(self._dpi*self._fconst))
+                max_box_len_, curr_box_len_ = self._ax.transData.inverted().transform(self._ax.transAxes.transform([max_box_len_, curr_box_len_])).tolist()
+                if inline_pos == "bottom": this_x, this_y = new_x, new_y - (max_box_len_) + (curr_box_len_)
+                elif inline_pos == "center": this_x, this_y = new_x, new_y - (max_box_len_/2) + (curr_box_len_/2)
                 else: this_x, this_y = new_x, new_y
                 
                 bbox, t_ = self._render_text(this_x, this_y, string, font, font==fontdict, withdash, **kwargs)
@@ -325,19 +325,23 @@ class SWMat(object):
     def _pixels_to_data(self, prev_bbox, length, group_x, group_y, max_fs, min_fs, newline=False):
         """
         """
-        #import math
+        import math
         x1 = prev_bbox.x1
         x1 = self._ax.transData.inverted().transform((x1, x1)).tolist()[0]
-        
-        #width = prev_bbox.width
+        _box_wd = (max_fs/(self._dpi*self._fconst))*self._btw_font_space
+        t_ = self._ax.transData.inverted().transform(self._ax.transAxes.transform([self._figsize_max/2e2, self._figsize_max/2e2])).tolist()[0]
+        y_const = self._ax.transData.inverted().transform(self._ax.transAxes.transform([_box_wd, _box_wd])).tolist()[1]*0.8
+        x_const = self._ax.transData.inverted().transform(self._ax.transAxes.transform([_box_wd/(1.62*min_fs), _box_wd/(1.62*min_fs)])).tolist()[0]/(math.exp(t_*1.2))
+
+
         
         res_x, res_y = None, None
         if newline:
             res_x = group_x
-            res_y = group_y - (max_fs/(self._dpi*self._fconst))*self._btw_font_space*550
+            res_y = group_y - y_const
         else:
             #char_len = width/length
-            res_x = x1 + (max_fs/(self._dpi*self._fconst*min_fs))*2
+            res_x = x1 + x_const
             res_y = group_y
         
         return res_x, res_y
