@@ -2,6 +2,4 @@
 Notebooks/.ipynb_checkpoints/SWMat-checkpoint.ipynb
 Notebooks/.ipynb_checkpoints/Examples-checkpoint.ipynb
 Notebooks/.ipynb_checkpoints/HowToVisualize-checkpoint.ipynb
-SWMat/__pycache__/SWMat.cpython-35.pyc
-SWMat/__pycache__/SWMat.cpython-35.pyc
-*.pyc
+SWMat/__pycache__/*
