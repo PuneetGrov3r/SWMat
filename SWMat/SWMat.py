@@ -220,22 +220,27 @@ class SWMat(object):
         return bbox, text
     
     # Done
-    def text(self, s, position='out-upper-right', inline_pos="center", fontdict=None, withdash=False, x=None, y=None, **kwargs):
+    def text(self, s, position='out-upper-right', inline_pos="center", fontdict=None, withdash=False, x=None, y=None,
+             btw_line_dist=1.1, btw_text_dist=1.0, **kwargs):
         """
         ** Call it after making your plot **
         This is a wrapper method to matplotlib's plt.text, adding some extra flexibility.
         
         Parameters:
                 position: str, tuple/list pair
-                    Position of text. Possible positions are 'upper-right', 'upper-left', 'lower-left', 
-                    'lower-right', 'upper-center', 'lower-center', 'out-upper-right', 'out-upper-left', 
-                    'out-lower-left', 'out-lower-right', 'out-upper-center', 'out-lower-center', 'title',
-                    'title+', 'title++' if string is choosen OR (x_precent, y_percent) if tuple or list is 
-                    choosen (eg: [.5, .5] will plot text in mid). 
+                    Position of text. Possible positions are 'upper-right', 'upper-left', 'lower-left', 'lower-right', 
+                    'upper-center', 'lower-center', 'mid-right', 'mid-left', 'mid-center', 'out-upper-right', 
+                    'out-upper-left', 'out-lower-left', 'out-lower-right', 'out-upper-center', 'out-lower-center', 
+                    'out-mid-right','out-mid-left', 'title', 'title+', 'title++' if string is choosen OR 
+                    (x_precent, y_percent) if tuple or list is choosen (eg: [.5, .5] will plot text in mid). 
                 inline_pos: str
                     Position of text in a line. If some sub-text has higher font size then this parameter
                     tells where to print smaller sub texts vertically. Possible values are: "center", "top",
                     "bottom".
+                btw_line_dist: float
+                    A constant to adjust space between lines in text.
+                btw_text_dist: float
+                    A constant to adjust space between two sub-texts separated by different parameters.
 
                 s: str (directly passed to matplotlib's text method)
                     The text.
@@ -253,10 +258,13 @@ class SWMat(object):
             
         """
         self._type_checking(position=(position, [None, (str, "from", ['upper-right', 'upper-left', 'lower-left', 'lower-right', 'upper-center', 
-                                               'lower-center', 'out-upper-right', 'out-upper-left', 'out-lower-left', 
-                                               'out-lower-right', 'out-upper-center', 'out-lower-center', 'title', 'title+', 'title++']),
+                                               'lower-center', 'mid-right', 'mid-left', 'mid-center', 'out-upper-right', 'out-upper-left', 
+                                               'out-lower-left', 'out-lower-right', 'out-upper-center', 'out-lower-center', 'out-mid-right',
+                                               'out-mid-left', 'title', 'title+', 'title++']),
                                                 tuple, list]),
-                            inline_pos= (inline_pos, [(str, "from", ["center", "top", "bottom"])]),
+                             inline_pos= (inline_pos, [(str, "from", ["center", "top", "bottom"])]),
+                             btw_line_dist= (btw_line_dist, [int, float]),
+                             btw_text_dist = (btw_text_dist, [int, float]),
                              s=(s, [str]),
                              fontdict=(fontdict, [None, dict]),
                              withdash=(withdash, [bool, int]),
@@ -270,12 +278,17 @@ class SWMat(object):
             'lower-right':     (.85, .15),
             'upper-center':    (.40, .95),
             'lower-center':    (.40, .15),
+            'mid-right':       (.85, .55),
+            'mid-left':        (.01, .55),
+            'mid-center':      (.40, .55),
             'out-upper-right': (1.03, .95),
             'out-upper-left':  (-.5, .95), 
-            'out-lower-left':  (-.3, .15),
+            'out-lower-left':  (-.5, .15),
             'out-lower-right': (1.03, .15),
             'out-upper-center':(.40, 1.3),
             'out-lower-center':(.40, -.2),
+            'out-mid-right':   (1.03, .55),
+            'out-mid-left':    (-.5, .55),
             'title':           (-.1, 1.15),
             'title+':          (-.1, 1.30),
             'title++':         (-.1, 1.45)
@@ -292,14 +305,14 @@ class SWMat(object):
 
         new_x, new_y = x, y
         result = []
-        new_line_y = y
+        #new_line_y = y
         for string_gp, max_fs, min_fs in strgps_and_maxfs:
             max_fs = float(max_fs)
             min_fs = float(min_fs)
             i = 0
             nl = False
             group_x = x
-            group_y = new_line_y
+            group_y = new_y #new_line_y
             for string, font in string_gp:
                 if font is not None:
                     if "fontsize" in font.keys(): curr_fs = float(font["fontsize"])
@@ -321,10 +334,10 @@ class SWMat(object):
                 bbox, t_ = self._render_text(this_x, this_y, string, font, font==fontdict, withdash, **kwargs)
                 result.append(t_)
                 if nl:
-                    new_x, new_y = self._pixels_to_data(bbox, len(string), group_x, new_line_y, max_fs, min_fs, newline=nl)
-                    new_line_y = new_y
+                    new_x, new_y = self._pixels_to_data(btw_line_dist, btw_text_dist, bbox, len(string), group_x, new_y, max_fs, min_fs, newline=nl)
+                    #new_line_y = new_y
                 else:
-                    new_x, new_y = self._pixels_to_data(bbox, len(string), group_x, group_y, max_fs, min_fs, newline=nl)
+                    new_x, new_y = self._pixels_to_data(btw_line_dist, btw_text_dist, bbox, len(string), group_x, group_y, max_fs, min_fs, newline=nl)
                 
                 i += 1
         
@@ -332,18 +345,16 @@ class SWMat(object):
         return self._ax.transAxes.inverted().transform(self._ax.transData.transform((new_x, new_y)).tolist()).tolist(), result
     
     # Done
-    def _pixels_to_data(self, prev_bbox, length, group_x, group_y, max_fs, min_fs, newline=False):
+    def _pixels_to_data(self, btw_line_dst, btw_text_dist, prev_bbox, length, group_x, group_y, max_fs, min_fs, newline=False):
         """
         """
         import math
         x1 = prev_bbox.x1
         x1 = self._ax.transData.inverted().transform((x1, x1)).tolist()[0]
         _box_wd = (max_fs/(self._dpi*self._fconst))*self._btw_font_space
-        t_ = self._ax.transData.inverted().transform(self._ax.transAxes.transform([self._figsize_max/2e2, self._figsize_max/2e2])).tolist()[0]
-        y_const = self._ax.transData.inverted().transform(self._ax.transAxes.transform([_box_wd, _box_wd])).tolist()[1]*1.1
-        x_const = self._ax.transData.inverted().transform(self._ax.transAxes.transform([_box_wd/(1.62*min_fs), _box_wd/(1.62*min_fs)])).tolist()[0]/(math.exp(t_*1.2))
-
-
+        #t_ = self._ax.transData.inverted().transform(self._ax.transAxes.transform([self._figsize_max/2e2, self._figsize_max/2e2])).tolist()[0]
+        y_const = self._ax.transData.inverted().transform(self._ax.transAxes.transform([_box_wd, _box_wd])).tolist()[1]*btw_line_dst
+        x_const = self._ax.transData.inverted().transform(self._ax.transAxes.transform([_box_wd*btw_text_dist/(1.62*min_fs), _box_wd*btw_text_dist/(1.62*min_fs)])).tolist()[0]
         
         res_x, res_y = None, None
         if newline:
@@ -356,6 +367,7 @@ class SWMat(object):
         
         return res_x, res_y
     
+    # Done
     def title(self, string, ttype="title", fontsize=25, color="black", alpha=0.85, **kwargs):
         """
         Add Title to current axes.
@@ -1204,7 +1216,7 @@ class SWMat(object):
     # Done
     def line_plot(self, xs, ys, line_labels=None, highlight=None, normal_color="gray", highlight_color="#FF7700",
                   label_points_after=None, label_points_before=None, xlabel=None, highlight_label_region_only=False,
-                  point_label_dist=0.1, **kwargs):
+                  point_label_dist=0.1, hide_y=False, **kwargs):
         """
         Making a line plot using matplotlib's plot function with a few changes.
         
@@ -1227,6 +1239,8 @@ class SWMat(object):
                 Weather to highlight line and points lying in region described by label_points_after and label_points_before.
             point_label_dist: float
                 Constant for adjusting distance of highlighted points' labels from current line.
+            hide_y: bool
+                Weather to hide y-axis or not.
             ...
             **kwargs:
                 Other params for matplotlib.pyplot.plot function.
@@ -1241,7 +1255,9 @@ class SWMat(object):
                               label_points_after=(label_points_after, [None, int, float, tuple, list]),
                               label_points_before=(label_points_before, [None, int, float, tuple, list]),
                               highlight_label_region_only=(highlight_label_region_only, [bool, int]),
-                              xlabel=(xlabel, [None, str]))
+                              xlabel=(xlabel, [None, str]),
+                              point_label_dist=(point_label_dist, [int, float]),
+                              hide_y=(hide_y, [bool, int]))
         #if linewidth==None: linewidth = math.log2(self._figsize_max)
         
         final_result = {}
@@ -1683,6 +1699,10 @@ class SWMat(object):
         final_result['labels_before'] = labels_before_
         final_result['points_after'] = points_after_
         final_result['points_before'] = points_before_
+
+        if hide_y:
+            self._ax.spines["left"].set_visible(False)
+            self._ax.yaxis.set_visible(False)
 
         return final_result
     
