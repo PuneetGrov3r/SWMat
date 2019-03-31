@@ -966,7 +966,7 @@ class SWMat(object):
         return return_
     
     ##################
-    def axis(self, labels=None, label_pos="view_based", ticks="start-end", color="gray", distance=None,
+    def axis(self, labels=None, label_pos="view-based", ticks="start-end", color="gray", distance=None,
              hide=None, hide_label=None):
         """
         Method to beautify both axis (x and y) of a plot.
@@ -976,7 +976,7 @@ class SWMat(object):
                 Tuple of two strings giving (xlabel, ylabel); OR (None, ylabel) OR (xlabel, None) OR string if one
                 of "x" or "y" is hidden (given by 'hide' parameter).
             label_pos: string
-                "view_based" - Recommended, based on way we look at charts; "default"; "end".
+                "view-based" - Recommended, based on way we look at charts; "default"; "end".
             ticks: string
                 "start-end" - Recommended, start and end axis with tick; "default"
             color: dict
@@ -990,12 +990,12 @@ class SWMat(object):
         """
         import math
         self._type_checking(labels=(labels, [str, list, tuple]),
-                              label_pos=(label_pos, [(str, "from", ["view_based", "default", "end"])]),
+                              label_pos=(label_pos, [(str, "from", ["view-based", "default", "end"])]),
                               ticks=(ticks, [str]),
-                              color=(color, [(dict, "with key(s)", ["x", "y"])]),
-                              distance=(distance, [(dict, "with key(s)", ["x", "y"]), int]),
-                              hide=(hide, [(str, "from", ["x", "y", "both"])]),
-                              hide_label=(hide_label, [(str, "from", ["x", "y", "both"])]))
+                              color=(color, [str, (dict, "with key(s)", ["x", "y"])]),
+                              distance=(distance, [None, (dict, "with key(s)", ["x", "y"]), int]),
+                              hide=(hide, [None, (str, "from", ["x", "y", "both"])]),
+                              hide_label=(hide_label, [None, (str, "from", ["x", "y", "both"])]))
         
         x_color, y_color = None, None
         if type(color) == str: x_color, y_color = color, color
@@ -1095,8 +1095,8 @@ class SWMat(object):
         
         inv = self._fig.transFigure.inverted()
         bottom, left = inv.transform([(x_dist if x_dist is not None else 0), (y_dist if y_dist is not None else 0)])
-        if label_pos == "view_based":
-            self._ax.xaxis.set_label_coords(.05, (-.1-bottom*2 if x_dist is not None else -.1))
+        if label_pos == "view-based":
+            self._ax.xaxis.set_label_coords(.15, (-.1-bottom*2 if x_dist is not None else -.1))
             self._ax.yaxis.set_label_coords((-.1-left if y_dist is not None else -.1), .8)
         elif label_pos == "end":
             self._ax.xaxis.set_label_coords(.8, (-.1-bottom*2 if x_dist is not None else -.1))
@@ -1260,6 +1260,23 @@ class SWMat(object):
                               hide_y=(hide_y, [bool, int]))
         #if linewidth==None: linewidth = math.log2(self._figsize_max)
         
+        if type(xs) in [tuple, list, pd.Series]:
+            a = np.vstack([np.array(xs), np.array(ys)]).T
+            a = a[np.lexsort(a.T[::-1])]
+
+            xs = a[:, 0].tolist()
+            ys = a[:, 1].tolist()
+        else:
+            for i in xs.shape[1]:
+                x_vect = xs[:, i]
+                y_vect = ys[:, i]
+                
+                a = np.vstack([x_vect, y_vect]).T
+                a = a[np.lexsort(a.T[::-1])]
+
+                xs[:, i] = a[:, 0]
+                ys[:, i] = a[:, 1]
+
         final_result = {}
 
         if (type(xs) == list) or (type(xs) == tuple) or (type(xs) == pd.Series):
@@ -1922,10 +1939,15 @@ class SWMat(object):
                 if type_[0] == str:
                     if to_chk not in type_[2]: count+=1
                 elif type_[0] == dict:
-                    if None in chk_from and to_chk is None: continue
+                    if None in chk_from and to_chk is None:
+                        count+=1 
+                        continue
                     else:
-                        for k_ in to_chk.keys():
-                            if k_ not in type_[2]: count+=1
+                        if type(to_chk) == dict:
+                            t_count = 0
+                            for k_ in to_chk.keys():
+                                if k_ not in type_[2]: t_count+=1
+                            if t_count > 0: count +=1
             else:
                 if type(to_chk) != type_: count+=1
         
