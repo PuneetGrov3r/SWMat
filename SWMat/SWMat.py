@@ -305,14 +305,13 @@ class SWMat(object):
 
         new_x, new_y = x, y
         result = []
-        #new_line_y = y
         for string_gp, max_fs, min_fs in strgps_and_maxfs:
             max_fs = float(max_fs)
             min_fs = float(min_fs)
             i = 0
             nl = False
             group_x = x
-            group_y = new_y #new_line_y
+            group_y = new_y
             for string, font in string_gp:
                 if font is not None:
                     if "fontsize" in font.keys(): curr_fs = float(font["fontsize"])
@@ -322,7 +321,7 @@ class SWMat(object):
                 
                 if i == len(string_gp)-1: nl=True
                 
-                if len(string) < 1 or string == " ": continue
+                if len(string) < 1: continue
                 
                 max_box_len_ =  (max_fs/(self._dpi*self._fconst))
                 curr_box_len_ =  (curr_fs/(self._dpi*self._fconst))
@@ -335,26 +334,25 @@ class SWMat(object):
                 result.append(t_)
                 if nl:
                     new_x, new_y = self._pixels_to_data(btw_line_dist, btw_text_dist, bbox, len(string), group_x, new_y, max_fs, min_fs, newline=nl)
-                    #new_line_y = new_y
                 else:
                     new_x, new_y = self._pixels_to_data(btw_line_dist, btw_text_dist, bbox, len(string), group_x, group_y, max_fs, min_fs, newline=nl)
                 
                 i += 1
         
-        
         return self._ax.transAxes.inverted().transform(self._ax.transData.transform((new_x, new_y)).tolist()).tolist(), result
     
     # Done
-    def _pixels_to_data(self, btw_line_dst, btw_text_dist, prev_bbox, length, group_x, group_y, max_fs, min_fs, newline=False):
+    def _pixels_to_data(self, btw_line_dist, btw_text_dist, prev_bbox, length, group_x, group_y, max_fs, min_fs, newline=False):
         """
         """
         import math
         x1 = prev_bbox.x1
+
         x1 = self._ax.transData.inverted().transform((x1, x1)).tolist()[0]
         _box_wd = (max_fs/(self._dpi*self._fconst))*self._btw_font_space
         #t_ = self._ax.transData.inverted().transform(self._ax.transAxes.transform([self._figsize_max/2e2, self._figsize_max/2e2])).tolist()[0]
-        y_const = self._ax.transData.inverted().transform(self._ax.transAxes.transform([_box_wd, _box_wd])).tolist()[1]*btw_line_dst
-        x_const = self._ax.transData.inverted().transform(self._ax.transAxes.transform([_box_wd*btw_text_dist/(1.62*min_fs), _box_wd*btw_text_dist/(1.62*min_fs)])).tolist()[0]
+        y_const = self._ax.transData.inverted().transform(self._ax.transAxes.transform([_box_wd, _box_wd])).tolist()[1]*btw_line_dist
+        x_const = self._ax.transData.inverted().transform(self._ax.transAxes.transform([_box_wd/(1.62*min_fs), _box_wd/(1.62*min_fs)])).tolist()[0]*btw_text_dist
         
         res_x, res_y = None, None
         if newline:
@@ -513,7 +511,7 @@ class SWMat(object):
     ###################
     def bar(self, cats, heights, width=0.8, plot_type="sidebyside", cat_labels=None, data_labels=None,
             highlight=None, highlight_type={"cat_type": "static", "data_type": "static"}, 
-            highlight_color={"cat_color": "#4B4FF4", "data_color": "#FF7700"}, normal_color="gray", **kwargs):
+            highlight_color={"cat_color": "#4B4FF4", "data_color": "#FF7700"}, normal_color="gray", annotate=False, **kwargs):
         """
         Parameters:
             cats, heights: numpy.ndarray or list(1D array) or tuple
@@ -528,7 +526,7 @@ class SWMat(object):
             highlight: dict
                 As {"cat": [1, 3...], "data": 2}. Can contain any one of them as key too.
             highlight_type: dict
-                "static" or "incrementalUp" or "IncrementalDown". As {"cat_type": "static", "data_type": "incremental"}. 
+                "static" or "incrementalUp" or "incrementalDown". As {"cat_type": "static", "data_type": "incremental"}. 
                 Can contain any one of them as key too.
             normal_color: gray
                 Color's for diffetentiting normal bins from highlighted bins. Default values are chosen by keeping
@@ -536,6 +534,8 @@ class SWMat(object):
             highlight_color: dict
                 As {"cat_color": "#4B4FF4", "data_color": "blue"}. Can contain any one of them as key too.
                 ## Data color takes precedence. ##
+            annotate: bool
+                Weather to annotate highlighted bars. Only works if "sidebyside" 'plot_type' is selected.
             ...
             **kwargs:      (directly passed to matplotlib's hist)
                 Contains all params that matplotlib's hist function takes.
@@ -553,19 +553,49 @@ class SWMat(object):
                               normal_color=(normal_color, [str, list, tuple]),
                               highlight_color=(highlight_color, [(dict, "with key(s)", ["cat_color", "data_color"])]))
         
-        if type(cats) == list or type(cats) == tuple:
+        n_ = len(cats)
+        n_cat = 1
+        if type(cats) == list or type(cats) == tuple or type(cats) == pd.Series:
             assert len(cats) == len(heights), "Number of points should be equal to number of heights given."
+            n_ = 1
+            n_cat = len(cats)
+        elif type(cats) == np.ndarray:
+            if len(cats.shape) == 1:
+                assert len(cats) == len(heights), "Number of points should be equal to number of heights given."
+                n_ = 1
+                n_cat = len(cats)
+            else:
+                assert cats.shape[0] == heights.shape[0], ('Number of diff. arrays given for bar plots should be equal to number of' 
+                                                       ' arrays of heights, stacked vertically.')
+                assert cats.shape[1] == heights.shape[1], ('Number of points in point\'s array(xs) should be equal to number of heights'
+                                                       ' in each array.')
+                n_ = cats.shape[0]
+                n_cat = cats.shape[1]
         else:
             assert cats.shape[0] == heights.shape[0], ('Number of diff. arrays given for bar plots should be equal to number of' 
                                                        ' arrays of heights, stacked vertically.')
             assert cats.shape[1] == heights.shape[1], ('Number of points in point\'s array(xs) should be equal to number of heights'
                                                        ' in each array.')
+            n_ = cats.shape[0]
+            n_cat = cats.shape[1]
         
         if type(cats) == list or type(cats) == tuple:
             return self._ax.bar(cats, heights, width=width, align='center', **kwargs)
         elif cats.shape[0] == 1:
             return self._ax.bar(cats, heights, width=width, align='center', **kwargs)
         
+        if highlight is not None:
+            if "cat" in highlight.keys():
+                if type(highlight["cat"]) in [list, tuple]:
+                    for i in range(len(highlight["cat"])):
+                        if highlight["cat"][i]<0: highlight["cat"][i] = n_cat + highlight["cat"][i]
+                elif highlight["cat"]<0: highlight["cat"] = n_cat + highlight["cat"]
+            if "data" in highlight.keys():
+                if type(highlight["data"]) in [list, tuple]:
+                    for i in range(len(highlight["data"])):
+                        if highlight["data"][i]<0: highlight["data"][i] = n_cat + highlight["data"][i]
+                elif highlight["cadatat"]<0: highlight["data"] = n_cat + highlight["data"]
+
         if "cat_color" in highlight_color.keys():
             cat_color = highlight_color['cat_color']
         else: cat_color = "gray"
@@ -587,16 +617,28 @@ class SWMat(object):
             minor_labels = []
             major_labels = []
             
-            n_ = cats.shape[0]
-            n_cat = cats.shape[1]
-            
             one_cat_width = (1.1*width*n_ + width)
             last_strt_pt = one_cat_width * (n_cat)
             
-            if cat_labels is not None: 
-                for i in range(len(cats[0,:])): major_xticks.append(i*one_cat_width + one_cat_width*(float(n_-1)/n_)*0.63+width)
-            if cat_labels is None:  
-                for c in cats[0,:]: major_labels.append(c)
+            if cat_labels is not None:
+                if type(cats) in [np.ndarray, pd.DataFrame]:
+                    if type(cats) == np.ndarray:
+                        if len(cats.shape) == 1:
+                            for i in range(len(cats)): major_xticks.append(i*one_cat_width + one_cat_width*(float(n_-1)/n_)*0.63+width)
+                    else:
+                        for i in range(len(cats[0,:])): major_xticks.append(i*one_cat_width + one_cat_width*(float(n_-1)/n_)*0.63+width)
+                else:
+                    for i in range(len(cats)): major_xticks.append(i*one_cat_width + one_cat_width*(float(n_-1)/n_)*0.63+width)
+            
+            if cat_labels is None:
+                if type(cats) in [np.ndarray, pd.DataFrame]:
+                    if type(cats) == np.ndarray:
+                        if len(cats.shape) == 1:
+                            for c in cats: major_labels.append(c)
+                    else:
+                        for c in cats[0,:]: major_labels.append(c)
+                else:
+                    for c in cats: major_labels.append(c)
             else: 
                 for c in cat_labels: major_labels.append(c)
 
@@ -606,8 +648,15 @@ class SWMat(object):
                 for x_t in x: minor_xticks.append(x_t+width*0.5)                
                 for j in range(len(x)):
                     if data_labels is not None: minor_labels.append(data_labels[i])
-                    
-                height = heights[i,:].tolist()
+                
+                if type(heights) in [np.ndarray, pd.DataFrame]:
+                    if (type(heights) == np.ndarray) and (len(heights.shape) == 1):
+                        height = heights.tolist()
+                    else:
+                        height = heights[i,:].tolist()
+                else:
+                    height = heights
+                
                 b_plt = self._ax.bar(x, height, width=width, align='edge', **kwargs)
                 return_.append(b_plt)
                 patches = b_plt.patches
@@ -622,6 +671,11 @@ class SWMat(object):
                                 p.set_color(cat_color)
                                 if cat_type == "IncrementalUp": p.set_alpha(max(0.5, height[k]/max_h))
                                 elif cat_type == "IncrementalDown": p.set_alpha(max(0.5, min_h/height[k]))
+                                
+                                if annotate:
+                                    self._ax.annotate(str(height[k]), xy=(x[k]+width/2, height[k]), xytext=(x[k]+width/2, height[k]+(.04)*max(height)), ha = 'center',
+                                                    bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor': cat_color, 'edgecolor': cat_color, 'alpha': 0.6},
+                                                    arrowprops={'arrowstyle':"wedge,tail_width=0.5", 'alpha':0.6, 'color': cat_color})
                     if "data" in highlight.keys():
                         if type(highlight['data']) == int: highlight['data'] = [highlight['data']]
                         for k, p in enumerate(patches):
@@ -629,6 +683,11 @@ class SWMat(object):
                                 p.set_color(data_color)
                                 if data_type == "IncrementalUp": p.set_alpha(max(0.5, height[k]/max_h))
                                 elif data_type == "IncrementalDown": p.set_alpha(max(0.5, min_h/height[k]))
+                                
+                                if annotate:
+                                    self._ax.annotate(str(height[k]), xy=(x[k]+width/2, height[k]), xytext=(x[k]+width/2, height[k]+(.04)*max(height)), ha = 'center',
+                                                    bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor': data_color, 'edgecolor': data_color, 'alpha': 0.6},
+                                                    arrowprops={'arrowstyle':"wedge,tail_width=0.5", 'alpha':0.6, 'color': data_color})
                 else:
                     for p in patches: p.set_color(normal_color)
             
@@ -645,6 +704,7 @@ class SWMat(object):
                 lbs[i].set_fontsize(math.log2(self._figsize_max)*5)
                 lbs[i].set_position((inv.transform((major_xticks[j], 10))[0], -0.08))
                 j += 1
+
         elif plot_type == "stackedV":
             self._ax.yaxis.set_visible(False)
             self._ax.spines['left'].set_visible(False)
@@ -662,9 +722,6 @@ class SWMat(object):
             _ax_.spines['right'].set_alpha(0.75)
             _ax_.yaxis.label.set_color('gray')
             
-            n_ = cats.shape[0]
-            n_cat = cats.shape[1]
-            
             one_cat_width = 1.5*width
             last_strt_pt = one_cat_width * (n_cat)
             
@@ -672,11 +729,29 @@ class SWMat(object):
             
             x = np.arange(1, last_strt_pt, one_cat_width)
             xtks = [tk+width/2 for tk in x]
+
+            
             if cat_labels is not None: xlabel = cat_labels
-            else: xlabel = [str(k) for k in cats[0,:]]
+            else: 
+                if type(cats) in [np.ndarray, pd.DataFrame]:
+                    if (type(cats) == np.ndarray) and (len(cats.shape) == 1):
+                        xlabel = [str(k) for k in cats]
+                    else:
+                        xlabel = [str(k) for k in cats[0,:]]
+                else:
+                    xlabel = [str(k) for k in cats]
+                
+                
             
             for i in range(n_):
-                height = heights[i,:]
+                if type(heights) in [np.ndarray, pd.DataFrame]:
+                    if (type(heights) == np.ndarray) and (len(heights.shape) == 1):
+                        height = heights
+                    else:
+                        height = heights[i,:]
+                else:
+                    height = heights
+                
                 b_plt = self._ax.bar(x, height, width=width, bottom=bottom, align='edge', **kwargs)
                 return_.append(b_plt)
                 bottom = bottom + height
@@ -761,9 +836,6 @@ class SWMat(object):
             self._ax.tick_params(axis='y',length=0, width=0, labelsize=math.log2(self._figsize_max)*5, pad=10*width)
             self._ax.spines['bottom'].set_smart_bounds(True)
             
-            n_ = cats.shape[0]
-            n_cat = cats.shape[1]
-            
             one_cat_width = 1.5*width
             last_strt_pt = one_cat_width * (n_cat)
             
@@ -772,10 +844,24 @@ class SWMat(object):
             y = np.arange(1, last_strt_pt, one_cat_width)
             ytks = [tk+width/2 for tk in y]
             if cat_labels is not None: ylabel = cat_labels
-            else: ylabel = [str(k) for k in cats[0,:]]
-            
+            else: 
+                if type(cats) in [np.ndarray, pd.Series]:
+                    if (type(cats) == np.ndarray) and (len(cats.shape) == 1):
+                        ylabel = [str(k) for k in cats]
+                    else:
+                        ylabel = [str(k) for k in cats[0,:]]
+                else:
+                    ylabel = [str(k) for k in cats]
+
             for i in range(n_):
-                height = heights[i,:]
+                if type(heights) in [np.ndarray, pd.Series]:
+                    if (type(heights) == np.ndarray) and (len(heights.shape) == 1):
+                        height = heights
+                    else:
+                        height = heights[i,:]
+                else:
+                    height = heights
+
                 b_plt = self._ax.barh(y, width=height, height=width, left=left, align='edge', **kwargs)
                 return_.append(b_plt)
                 left = left + height
@@ -854,8 +940,11 @@ class SWMat(object):
                         if i < 0: i = n_ + i
                         tks[i].set_color(highlight_color['cat_color'])
         elif plot_type == "stacked100%":
-            for i in range(1, heights.shape[1]):
-                assert np.sum(heights[:,0]) == np.sum(heights[:,i]), "Every category should have same sum (of heights) to get 100% bar plot."
+            if type(heights) in [pd.Series, np.ndarray]:
+                if (len(heights.shape) != 1):
+                    for i in range(1, heights.shape[1]):
+                        assert np.sum(heights[:,0]) == np.sum(heights[:,i]), "Every category should have same sum (of heights) to get 100% bar plot."
+            
             #for i in range(heights.shape[1]):
             #    sum_ = np.sum(heights[:,i])
             #    heights[:, i] = heights[:, i]/float(sum_)
@@ -866,9 +955,6 @@ class SWMat(object):
             self._ax.tick_params(axis='y',length=0, width=0, labelsize=math.log2(self._figsize_max)*5, pad=10*width)
             self._ax.spines['bottom'].set_smart_bounds(True)
             
-            n_ = cats.shape[0]
-            n_cat = cats.shape[1]
-            
             one_cat_width = 1.5*width
             last_strt_pt = one_cat_width * (n_cat)
             
@@ -877,10 +963,25 @@ class SWMat(object):
             y = np.arange(1, last_strt_pt, one_cat_width)
             ytks = [tk+width/2 for tk in y]
             if cat_labels is not None: ylabel = cat_labels
-            else: ylabel = [str(k) for k in cats[0,:]]
+            else:
+                if type(ylabel) in [pd.Series, np.ndarray]:
+                    if (type(ylabel) == np.ndarray) and (len(ylabel.shape) == 1):
+                        ylabel = [str(k) for k in cats]
+                    else:
+                        ylabel = [str(k) for k in cats[0,:]]
+                else:
+                    ylabel = [str(k) for k in cats]
+                
             
             for i in range(n_):
-                height = heights[i,:]
+                if type(heights) in [pd.Series, np.ndarray]:
+                    if (type(heights) == np.ndarray) and (len(heights.shape) == 1):
+                        height = heights
+                    else:
+                        height = heights[i,:]
+                else:
+                    height = heights
+                
                 b_plt = self._ax.barh(y, width=height, height=width, left=left, align='edge', **kwargs)
                 return_.append(b_plt)
                 left = left + height
@@ -1808,7 +1909,7 @@ class SWMat(object):
         min_p = np.inf
         
         if vert == False:
-            v_plot =  self._ax.violinplot(dataset, positions=positions, vert=vert, showextrema=showextrema, **kwargs)
+            v_plot = self._ax.violinplot(dataset, positions=positions, vert=vert, showextrema=showextrema, **kwargs)
             
             if show=="top":
                 for i in range(len(positions)):
@@ -1833,7 +1934,7 @@ class SWMat(object):
                 self._ax.set_ylim(min_p-(max_p-min_p)*.01, max_p+(max_p-min_p)*.03)
 
         elif vert == True:
-            v_plot = v_plot =  self._ax.violinplot(dataset, positions=positions, vert=vert, showextrema=showextrema, **kwargs)
+            v_plot = v_plot = self._ax.violinplot(dataset, positions=positions, vert=vert, showextrema=showextrema, **kwargs)
 
             if show=="left":
                 for i in range(len(positions)):
@@ -1869,6 +1970,8 @@ class SWMat(object):
                     if pts[3] == "x":
                         self._ax.fill_betweenx(y=pts[0],x1=pts[1],x2=pts[2],color=highlight_color, alpha=0.85, 
                                               edgecolor="white", zorder=999.0)
+        
+        self._fig.tight_layout()
     
     # Done
     def _get_pts(self, ps, curve_pts, show, min_p, max_p, pos):
@@ -1933,23 +2036,19 @@ class SWMat(object):
         chk_from = t[1]
         count = 0
         for type_ in chk_from:
-            if type_ is None:
-                if to_chk is not None: count+=1
-            elif type(type_) == tuple:
+            if type(type_) == tuple:
                 if type_[0] == str:
                     if to_chk not in type_[2]: count+=1
                 elif type_[0] == dict:
-                    if None in chk_from and to_chk is None:
-                        count+=1 
-                        continue
-                    else:
-                        if type(to_chk) == dict:
-                            t_count = 0
-                            for k_ in to_chk.keys():
-                                if k_ not in type_[2]: t_count+=1
-                            if t_count > 0: count +=1
-            else:
+                    if type(to_chk) == dict:
+                        t_count = 0
+                        for k_ in to_chk.keys():
+                            if k_ not in type_[2]: t_count+=1
+                        if t_count > 0: count +=1
+            elif to_chk is not None:
                 if type(to_chk) != type_: count+=1
+        if to_chk is None:
+            if None not in chk_from: count+=1
         
         if count >= len(chk_from): return False, "Its type should be one of {0}".format(chk_from)
         return True, ""
