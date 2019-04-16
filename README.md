@@ -1,3 +1,9 @@
+```
+Help Needed (in .text function):
+Right now text function just adds height of text (a constant a calculated manually) based on fontsize for next line sub-text.
+It doesn't work as expected many times. So, I want to change it in a matplolib way to calculate new line y value.
+```
+
 # SWMat - Storytelling With Matplotlib
 
 ## (Make stunning graphs/charts using matplotlib in just a few lines of code)
